@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.work.Data
@@ -34,6 +35,8 @@ import cnovaez.dev.todoappcompose.utils.logs.LogInfo
 import cnovaez.dev.todoappcompose.utils.notifications.NotificationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
@@ -56,16 +59,13 @@ class TaskViewModel @Inject constructor(
     private val deleteTaskUseCase: DeleteTaskUseCase,
     private val deleteTaskByIdUseCase: DeleteTaskByIdUseCase,
     private val getTasksUseCase: GetTasksUseCase,
-    private val getTaskByIdUseCase: GetTaskByIdUseCase,
     private val updateTaskUseCase: UpdateTaskUseCase,
     private val getTaskByFilterUseCase: GetTasksByFilterUseCase,
     private val getRowIdUseCase: GetRowIdUseCase,
     private val getAllTasksUseCase: GetAllTasksUseCase,
+    private val savedStateHandle: SavedStateHandle
+) : ViewModel() {
 
-    ) : ViewModel() {
-
-
-    val selectedTime = MutableLiveData("")
     val searchQuery = MutableLiveData("")
     val snackBarHostState = SnackbarHostState()
     val today: String by lazy {
@@ -90,6 +90,12 @@ class TaskViewModel @Inject constructor(
 
     private val _showDeleteSnackBar = MutableLiveData<Pair<Boolean, TaskModel?>>()
 
+    private val currentTask: TaskModel?
+        get() = savedStateHandle[CURRENT_TASK]
+
+    private fun setDeleteCurrentTask(task: TaskModel?) {
+        savedStateHandle[CURRENT_TASK] = task
+    }
 
     init {
         loadTasksList()
@@ -243,11 +249,10 @@ class TaskViewModel @Inject constructor(
         }
     }
 
-    private var currentDeletedTask: TaskModel? = null
     fun deleteTaskFromMemory(task: TaskModel) {
         try {
             viewModelScope.launch {
-                currentDeletedTask = task
+                setDeleteCurrentTask(task)
                 deleteTaskByIdUseCase(task.id)
                 loadTasksList()
             }
@@ -294,9 +299,9 @@ class TaskViewModel @Inject constructor(
 
     fun reloadTasksList() {
         viewModelScope.launch {
-            if (currentDeletedTask != null) {
-                insertTaskUseCase(currentDeletedTask!!.toEntity())
-                currentDeletedTask = null
+            if (currentTask != null) {
+                insertTaskUseCase(currentTask!!.toEntity())
+                setDeleteCurrentTask(null)
             }
             loadTasksList()
         }
@@ -456,7 +461,8 @@ class TaskViewModel @Inject constructor(
 
     private fun combineDateTime(date: String, time: String): Date? {
         val dateTimeString = "$date $time"
-        val dateTimeFormat = SimpleDateFormat("dd-MM-yyyy hh:mm a",getLocaleByLanguage(curr_context!!))
+        val dateTimeFormat =
+            SimpleDateFormat("dd-MM-yyyy hh:mm a", getLocaleByLanguage(curr_context!!))
 
         return try {
             dateTimeFormat.parse(dateTimeString)
@@ -489,9 +495,6 @@ class TaskViewModel @Inject constructor(
     }
 
     fun showDeleteSnackBar(b: Boolean, task: TaskModel? = null) {
-        if(!b){
-            currentDeletedTask = null
-        }
         _showDeleteSnackBar.value = Pair(b, task)
     }
 
@@ -503,8 +506,9 @@ class TaskViewModel @Inject constructor(
         _showChart.value = b
     }
 
-    fun updateShowChartLoading(b: Boolean) {
-        _showChartLoading.value = b
+
+    companion object {
+        private const val CURRENT_TASK = "currentTask"
     }
 
 }

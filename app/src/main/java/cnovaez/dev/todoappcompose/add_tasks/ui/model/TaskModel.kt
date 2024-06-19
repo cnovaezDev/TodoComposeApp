@@ -1,6 +1,7 @@
 package cnovaez.dev.todoappcompose.add_tasks.ui.model
 
 import cnovaez.dev.todoappcompose.add_tasks.data.TaskEntity
+import java.io.Serializable
 
 /**
  ** Created by Carlos A. Novaez Guerrero on 10/28/2023 8:47 PM
@@ -19,7 +20,7 @@ data class TaskModel(
     val important: Boolean = false,
     var followUp: Boolean = true,
 
-) {
+): Serializable {
 
     fun toEntity() = TaskEntity(
         id = id,

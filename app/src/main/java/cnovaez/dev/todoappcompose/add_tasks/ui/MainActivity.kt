@@ -40,35 +40,7 @@ class MainActivity : ComponentActivity() {
     private var mInterstitialAd: InterstitialAd? = null
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        curr_context = this
-        loadIntersitialAdd("ca-app-pub-1269790857555936/4273418123")
-
-        // En tu actividad o fragmento de JetPack Compose
-        if (checkNotificationPermission(this)) {
-            // Puedes mostrar notificaciones
-        } else {
-            // Debes solicitar permiso de notificación
-            requestNotificationPermission(this)
-        }
-        checkAndRequestPermissions()
-        loginViewModel.getLogin()
-        val lang = getLanguage(this)
-
-        if (lang == "na") {
-            val defaultLanguage = Locale.getDefault().language
-            setLocale(this, defaultLanguage)
-            setLanguage(this, defaultLanguage)
-        } else {
-            setLocale(this, lang)
-        }
-
-        val isDailyNotifySet = getDailyNotify(this)
-        if (!isDailyNotifySet) {
-            taskViewModel.scheduleSystemRepeatingNotification(this)
-            setDailyNotify(this, true)
-        }
-
+        setUpInitialData()
         setContent {
 
             val navigationController = rememberNavController()
@@ -91,6 +63,39 @@ class MainActivity : ComponentActivity() {
 
         }
 
+    }
+
+    private fun setUpInitialData() {
+        curr_context = this
+        loadIntersitialAdd("ca-app-pub-1269790857555936/4273418123")
+
+        if (checkNotificationPermission(this)) {
+
+        } else {
+            // Debes solicitar permiso de notificación
+            requestNotificationPermission(this)
+        }
+        checkAndRequestPermissions()
+        loginViewModel.getLogin()
+        loadLanguageLogic()
+
+
+        val isDailyNotifySet = getDailyNotify(this)
+        if (!isDailyNotifySet) {
+            taskViewModel.scheduleSystemRepeatingNotification(this)
+            setDailyNotify(this, true)
+        }
+    }
+
+    private fun loadLanguageLogic() {
+        val lang = getLanguage(this)
+        if (lang == "na") {
+            val defaultLanguage = Locale.getDefault().language
+            setLocale(this, defaultLanguage)
+            setLanguage(this, defaultLanguage)
+        } else {
+            setLocale(this, lang)
+        }
     }
 
 
